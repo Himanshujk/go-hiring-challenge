@@ -3,6 +3,7 @@ package database
 import (
 	"fmt"
 	"log"
+	"time"
 
 	_ "github.com/lib/pq"
 	"gorm.io/driver/postgres"
@@ -21,6 +22,13 @@ func New(user, password, dbname, port string) (db *gorm.DB, close func() error) 
 	if err != nil {
 		log.Fatalf("Failed to get database connection: %s", err)
 	}
+
+	// keep the pool bounded; idle timeout avoids stale connections after a quiet period
+	// better for resource management :)
+	sqlDB.SetMaxOpenConns(25)
+	sqlDB.SetMaxIdleConns(10)
+	sqlDB.SetConnMaxLifetime(5 * time.Minute)
+	sqlDB.SetConnMaxIdleTime(1 * time.Minute)
 
 	return db, sqlDB.Close
 }
